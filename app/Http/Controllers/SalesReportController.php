@@ -14,21 +14,31 @@ class SalesReportController extends Controller
         $salesData = null;
 
         if ($year) {
-            $menuResponse = Http::get('http://tes-web.landa.id/intermediate/menu');
-            $menus = $menuResponse->json();
-            $transaksiResponse = Http::get("http://tes-web.landa.id/intermediate/transaksi?tahun={$year}");
-            $transaksi = $transaksiResponse->json();
+            // Initialize Guzzle HTTP client
+            $client = new Client();
+
+            // Use Guzzle to send a GET request to the 'menu' endpoint
+            $menuResponse = $client->request('GET', 'http://tes-web.landa.id/intermediate/menu');
+            // Parse the response body to JSON
+            $menus = json_decode($menuResponse->getBody(), true);
+
+            // Use Guzzle to send a GET request to the 'transaksi' endpoint with the year query parameter
+            $transaksiResponse = $client->request('GET', "http://tes-web.landa.id/intermediate/transaksi", [
+                'query' => ['tahun' => $year]
+            ]);
+            // Parse the response body to JSON
+            $transaksi = json_decode($transaksiResponse->getBody(), true);
 
             // Process this data to generate $salesData
             $salesData = $this->processDataForTable($menus, $transaksi, $year);
         }
 
+        // Render the 'welcome' view (or 'home' if that's your intended view) with the sales data and selected year
         return view('welcome', [
             'salesData' => $salesData,
             'selectedYear' => $year
         ]);
     }
-
 
     private function processDataForTable($menus, $transaksi, $year)
     {
